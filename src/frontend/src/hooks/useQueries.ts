@@ -1,56 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Bank, Expense } from "../backend.d";
-import { useActor } from "./useActor";
+import * as localStore from "../utils/localStore";
 
 export function useGetAllBanks() {
-  const { actor, isFetching } = useActor();
   return useQuery<Bank[]>({
     queryKey: ["banks"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllBanks();
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: async () => localStore.getAllBanks(),
   });
 }
 
 export function useGetAllExpenses() {
-  const { actor, isFetching } = useActor();
   return useQuery<Expense[]>({
     queryKey: ["expenses"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllExpenses();
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: async () => localStore.getAllExpenses(),
   });
 }
 
 export function useGetTotalSummary() {
-  const { actor, isFetching } = useActor();
   return useQuery({
     queryKey: ["totalSummary"],
-    queryFn: async () => {
-      if (!actor)
-        return {
-          bankSummaries: [],
-          totalAmount: 0,
-          transactionTypeSummaries: [],
-        };
-      return actor.getTotalSummary();
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: async () => localStore.getTotalSummary(),
   });
 }
 
 export function useAddBank() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (name: string) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.addBank(name);
-    },
+    mutationFn: async (name: string) => localStore.addBank(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["banks"] });
       queryClient.invalidateQueries({ queryKey: ["totalSummary"] });
@@ -59,13 +35,9 @@ export function useAddBank() {
 }
 
 export function useDeleteBank() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (bankId: string) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.deleteBank(bankId);
-    },
+    mutationFn: async (bankId: string) => localStore.deleteBank(bankId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["banks"] });
       queryClient.invalidateQueries({ queryKey: ["totalSummary"] });
@@ -74,7 +46,6 @@ export function useDeleteBank() {
 }
 
 export function useAddExpense() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: {
@@ -86,9 +57,8 @@ export function useAddExpense() {
       splitAmount: number;
       notes: string | null;
       takeFrom: string | null;
-    }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.addExpense(
+    }) =>
+      localStore.addExpense(
         data.date,
         data.bankId,
         data.bankName,
@@ -97,8 +67,7 @@ export function useAddExpense() {
         data.splitAmount,
         data.notes,
         data.takeFrom,
-      );
-    },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["totalSummary"] });
@@ -107,13 +76,10 @@ export function useAddExpense() {
 }
 
 export function useDeleteExpense() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (expenseId: bigint) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.deleteExpense(expenseId);
-    },
+    mutationFn: async (expenseId: bigint) =>
+      localStore.deleteExpense(expenseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["totalSummary"] });
@@ -122,16 +88,10 @@ export function useDeleteExpense() {
 }
 
 export function useSetBankBudgetLimit() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      bankId,
-      limit,
-    }: { bankId: string; limit: number }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.setBankBudgetLimit(bankId, limit);
-    },
+    mutationFn: async ({ bankId, limit }: { bankId: string; limit: number }) =>
+      localStore.setBankBudgetLimit(bankId, limit),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["banks"] });
       queryClient.invalidateQueries({ queryKey: ["totalSummary"] });
@@ -140,13 +100,10 @@ export function useSetBankBudgetLimit() {
 }
 
 export function useRemoveBankBudgetLimit() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (bankId: string) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.removeBankBudgetLimit(bankId);
-    },
+    mutationFn: async (bankId: string) =>
+      localStore.removeBankBudgetLimit(bankId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["banks"] });
       queryClient.invalidateQueries({ queryKey: ["totalSummary"] });
