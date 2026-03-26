@@ -30,6 +30,8 @@ export function AddExpensePage() {
   const [amount, setAmount] = useState("");
   const [splitAmount, setSplitAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [category, setCategory] = useState("");
   const [success, setSuccess] = useState(false);
 
   const selectedBank = banks.find((b) => b.id === bankId);
@@ -50,6 +52,8 @@ export function AddExpensePage() {
         splitAmount: splitAmount ? Number.parseFloat(splitAmount) : 0,
         notes: notes || null,
         takeFrom: takeFrom || null,
+        purpose: purpose || null,
+        category: category || null,
       });
       toast.success("Expense added successfully!");
       setSuccess(true);
@@ -60,6 +64,8 @@ export function AddExpensePage() {
       setAmount("");
       setSplitAmount("");
       setNotes("");
+      setPurpose("");
+      setCategory("");
       setTimeout(() => setSuccess(false), 3000);
     } catch {
       toast.error("Failed to add expense");
@@ -197,6 +203,47 @@ export function AddExpensePage() {
                     rows={3}
                     data-ocid="add_expense.textarea"
                   />
+                </div>
+
+                {/* Optional fields */}
+                <div className="border-t pt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                    Optional Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="page-purpose">
+                        Purpose{" "}
+                        <span className="text-muted-foreground font-normal">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="page-purpose"
+                        type="text"
+                        value={purpose}
+                        onChange={(e) => setPurpose(e.target.value)}
+                        placeholder="e.g. Groceries, Rent..."
+                        data-ocid="add_expense.input"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="page-category">
+                        Category{" "}
+                        <span className="text-muted-foreground font-normal">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="page-category"
+                        type="text"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        placeholder="e.g. Food, Housing..."
+                        data-ocid="add_expense.input"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3 pt-1">

@@ -101,6 +101,8 @@ export function addExpense(
   splitAmount: number,
   notes: string | null,
   takeFrom: string | null,
+  purpose: string | null,
+  category: string | null,
 ): bigint {
   const expenses = loadExpenses();
   const id = nextId();
@@ -115,10 +117,23 @@ export function addExpense(
     splitAmount,
     ...(notes ? { notes } : {}),
     ...(takeFrom ? { takeFrom } : {}),
+    ...(purpose ? { purpose } : {}),
+    ...(category ? { category } : {}),
   };
   expenses.push(expense);
   saveExpenses(expenses);
   return id;
+}
+
+export function updateExpense(
+  expenseId: bigint,
+  updates: Partial<Omit<Expense, "id" | "createdAt">>,
+): void {
+  const expenses = loadExpenses();
+  const idx = expenses.findIndex((e) => e.id === expenseId);
+  if (idx === -1) return;
+  expenses[idx] = { ...expenses[idx], ...updates };
+  saveExpenses(expenses);
 }
 
 export function deleteExpense(expenseId: bigint): void {

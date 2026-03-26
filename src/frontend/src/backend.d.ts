@@ -37,10 +37,12 @@ export interface Expense {
     notes?: string;
     takeFrom?: string;
     amount: number;
+    purpose?: string;
+    category?: string;
 }
 export interface backendInterface {
     addBank(name: string): Promise<BankId>;
-    addExpense(date: string, bankId: string, bankName: string, transactionType: string, amount: number, splitAmount: number, notes: string | null, takeFrom: string | null): Promise<ExpenseId>;
+    addExpense(date: string, bankId: string, bankName: string, transactionType: string, amount: number, splitAmount: number, notes: string | null, takeFrom: string | null, purpose: string | null, category: string | null): Promise<ExpenseId>;
     deleteBank(bankId: BankId): Promise<void>;
     deleteExpense(expenseId: ExpenseId): Promise<void>;
     getAllBankNames(): Promise<Array<string>>;

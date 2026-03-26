@@ -1,6 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -16,8 +25,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Download,
+  Pencil,
   PlusCircle,
   Receipt,
   Trash2,
@@ -39,12 +50,14 @@ import {
   YAxis,
 } from "recharts";
 import { toast } from "sonner";
+import type { Expense } from "../backend.d";
 import { AddExpenseModal } from "../components/AddExpenseModal";
 import {
   useDeleteExpense,
   useGetAllBanks,
   useGetAllExpenses,
   useGetTotalSummary,
+  useUpdateExpense,
 } from "../hooks/useQueries";
 
 const TRANSACTION_TYPES = ["Cash", "Credit Card", "Debit Card", "UPI"];
@@ -72,7 +85,7 @@ const txBadgeColor: Record<string, string> = {
   UPI: "bg-orange-100 text-orange-700",
 };
 
-function exportToCSV(expenses: ReturnType<typeof useGetAllExpenses>["data"]) {
+function exportToCSV(expenses: Expense[] | undefined) {
   const rows = expenses ?? [];
   const headers = [
     "Date",
@@ -82,6 +95,8 @@ function exportToCSV(expenses: ReturnType<typeof useGetAllExpenses>["data"]) {
     "Amount",
     "Split Amount",
     "Notes",
+    "Purpose",
+    "Category",
   ];
   const csvRows = [
     headers.join(","),
@@ -94,6 +109,8 @@ function exportToCSV(expenses: ReturnType<typeof useGetAllExpenses>["data"]) {
         e.amount,
         e.splitAmount,
         `"${(e.notes ?? "").replace(/"/g, '""')}"`,
+        `"${(e.purpose ?? "").replace(/"/g, '""')}"`,
+        `"${(e.category ?? "").replace(/"/g, '""')}"`,
       ].join(","),
     ),
   ];
@@ -108,6 +125,254 @@ function exportToCSV(expenses: ReturnType<typeof useGetAllExpenses>["data"]) {
   URL.revokeObjectURL(url);
 }
 
+interface EditFormProps {
+  expense: Expense;
+  banks: { id: string; name: string }[];
+  onClose: () => void;
+}
+
+function EditExpenseForm({ expense, banks, onClose }: EditFormProps) {
+  const updateExpense = useUpdateExpense();
+
+  const [date, setDate] = useState(expense.date);
+  const [bankId, setBankId] = useState(expense.bankId);
+  const [transactionType, setTransactionType] = useState(
+    expense.transactionType,
+  );
+  const [takeFrom, setTakeFrom] = useState(expense.takeFrom ?? "");
+  const [amount, setAmount] = useState(String(expense.amount));
+  const [splitAmount, setSplitAmount] = useState(
+    expense.splitAmount ? String(expense.splitAmount) : "",
+  );
+  const [notes, setNotes] = useState(expense.notes ?? "");
+  const [purpose, setPurpose] = useState(expense.purpose ?? "");
+  const [category, setCategory] = useState(expense.category ?? "");
+
+  const selectedBank = banks.find((b) => b.id === bankId);
+
+  const handleSave = async () => {
+    if (!bankId || !transactionType || !amount) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    try {
+      await updateExpense.mutateAsync({
+        expenseId: expense.id,
+        updates: {
+          date,
+          bankId,
+          bankName: selectedBank?.name ?? expense.bankName,
+          transactionType,
+          amount: Number.parseFloat(amount),
+          splitAmount: splitAmount ? Number.parseFloat(splitAmount) : 0,
+          notes: notes || undefined,
+          takeFrom: takeFrom || undefined,
+          purpose: purpose || undefined,
+          category: category || undefined,
+        },
+      });
+      toast.success("Expense updated");
+      onClose();
+    } catch {
+      toast.error("Failed to update expense");
+    }
+  };
+
+  return (
+    <>
+      <div className="space-y-4 mt-2">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-date">Date *</Label>
+            <Input
+              id="edit-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              data-ocid="edit_expense.input"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Bank *</Label>
+            <Select value={bankId} onValueChange={setBankId}>
+              <SelectTrigger data-ocid="edit_expense.select">
+                <SelectValue placeholder="Select bank" />
+              </SelectTrigger>
+              <SelectContent>
+                {banks.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Transaction Type *</Label>
+          <Select value={transactionType} onValueChange={setTransactionType}>
+            <SelectTrigger data-ocid="edit_expense.select">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {TRANSACTION_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-take-from">Take From</Label>
+          <Input
+            id="edit-take-from"
+            type="text"
+            value={takeFrom}
+            onChange={(e) => setTakeFrom(e.target.value)}
+            placeholder="e.g. Wallet, Savings..."
+            data-ocid="edit_expense.input"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-amount">Amount (₹) *</Label>
+            <Input
+              id="edit-amount"
+              type="number"
+              min="0"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              data-ocid="edit_expense.input"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-split">Split Amount (₹)</Label>
+            <Input
+              id="edit-split"
+              type="number"
+              min="0"
+              step="0.01"
+              value={splitAmount}
+              onChange={(e) => setSplitAmount(e.target.value)}
+              placeholder="0.00"
+              data-ocid="edit_expense.input"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-notes">Notes</Label>
+          <Textarea
+            id="edit-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Optional notes..."
+            rows={2}
+            data-ocid="edit_expense.textarea"
+          />
+        </div>
+
+        <div className="border-t pt-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Optional Details
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-purpose">
+                Purpose{" "}
+                <span className="text-muted-foreground font-normal text-xs">
+                  (optional)
+                </span>
+              </Label>
+              <Input
+                id="edit-purpose"
+                type="text"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                placeholder="e.g. Groceries..."
+                data-ocid="edit_expense.input"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-category">
+                Category{" "}
+                <span className="text-muted-foreground font-normal text-xs">
+                  (optional)
+                </span>
+              </Label>
+              <Input
+                id="edit-category"
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Food..."
+                data-ocid="edit_expense.input"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <DialogFooter className="mt-4">
+        <Button
+          variant="outline"
+          onClick={onClose}
+          data-ocid="edit_expense.cancel_button"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={updateExpense.isPending}
+          data-ocid="edit_expense.save_button"
+        >
+          {updateExpense.isPending ? "Saving..." : "Save Changes"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+interface EditDialogProps {
+  expense: Expense | null;
+  banks: { id: string; name: string }[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function EditExpenseDialog({
+  expense,
+  banks,
+  open,
+  onOpenChange,
+}: EditDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="sm:max-w-lg max-h-[90vh] overflow-y-auto"
+        data-ocid="edit_expense.dialog"
+      >
+        <DialogHeader>
+          <DialogTitle>Edit Expense</DialogTitle>
+        </DialogHeader>
+        {expense && (
+          <EditExpenseForm
+            key={expense.id.toString()}
+            expense={expense}
+            banks={banks}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
   const { data: expenses = [], isLoading: expLoading } = useGetAllExpenses();
   const { data: summary, isLoading: sumLoading } = useGetTotalSummary();
@@ -117,6 +382,8 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
   const [filterBank, setFilterBank] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const thisMonth = useMemo(() => {
     const now = new Date();
@@ -148,7 +415,6 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
     }));
   }, [summary]);
 
-  // Budget progress: current month spending per bank
   const budgetProgressData = useMemo(() => {
     const now = new Date();
     const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -179,11 +445,22 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
     }
   };
 
+  const handleEdit = (exp: Expense) => {
+    setEditExpense(exp);
+    setEditOpen(true);
+  };
+
   const isLoading = expLoading || sumLoading;
 
   return (
     <>
       <AddExpenseModal open={addOpen} onOpenChange={setAddOpen} />
+      <EditExpenseDialog
+        expense={editExpense}
+        banks={banks}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
 
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
@@ -467,62 +744,83 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
                 No expenses found. Add your first expense!
               </div>
             ) : (
-              <Table data-ocid="expenses.table">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Bank</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Take From</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Split</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((exp, idx) => (
-                    <TableRow
-                      key={exp.id.toString()}
-                      data-ocid={`expenses.item.${idx + 1}`}
-                    >
-                      <TableCell className="text-sm">{exp.date}</TableCell>
-                      <TableCell className="text-sm font-medium">
-                        {exp.bankName}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            txBadgeColor[exp.transactionType] ??
-                            "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {exp.transactionType}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {exp.takeFrom ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-sm">
-                        {fmt(exp.amount)}
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {exp.splitAmount > 0 ? fmt(exp.splitAmount) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(exp.id)}
-                          className="h-7 w-7 p-0 hover:text-destructive"
-                          data-ocid={`expenses.delete_button.${idx + 1}`}
-                        >
-                          <Trash2 size={13} />
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table data-ocid="expenses.table">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Bank</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Take From</TableHead>
+                      <TableHead>Purpose</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-right">Split</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((exp, idx) => (
+                      <TableRow
+                        key={exp.id.toString()}
+                        data-ocid={`expenses.item.${idx + 1}`}
+                      >
+                        <TableCell className="text-sm">{exp.date}</TableCell>
+                        <TableCell className="text-sm font-medium">
+                          {exp.bankName}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              txBadgeColor[exp.transactionType] ??
+                              "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {exp.transactionType}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {exp.takeFrom ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
+                          {exp.purpose ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
+                          {exp.category ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-sm">
+                          {fmt(exp.amount)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {exp.splitAmount > 0 ? fmt(exp.splitAmount) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(exp)}
+                              className="h-7 w-7 p-0 hover:text-primary"
+                              data-ocid={`expenses.edit_button.${idx + 1}`}
+                            >
+                              <Pencil size={13} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(exp.id)}
+                              className="h-7 w-7 p-0 hover:text-destructive"
+                              data-ocid={`expenses.delete_button.${idx + 1}`}
+                            >
+                              <Trash2 size={13} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

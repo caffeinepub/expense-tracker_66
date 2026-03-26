@@ -57,6 +57,8 @@ export function useAddExpense() {
       splitAmount: number;
       notes: string | null;
       takeFrom: string | null;
+      purpose: string | null;
+      category: string | null;
     }) =>
       localStore.addExpense(
         data.date,
@@ -67,7 +69,26 @@ export function useAddExpense() {
         data.splitAmount,
         data.notes,
         data.takeFrom,
+        data.purpose,
+        data.category,
       ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["totalSummary"] });
+    },
+  });
+}
+
+export function useUpdateExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      expenseId,
+      updates,
+    }: {
+      expenseId: bigint;
+      updates: Partial<Omit<Expense, "id" | "createdAt">>;
+    }) => localStore.updateExpense(expenseId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["totalSummary"] });

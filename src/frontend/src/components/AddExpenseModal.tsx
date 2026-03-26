@@ -39,6 +39,8 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const [amount, setAmount] = useState("");
   const [splitAmount, setSplitAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [category, setCategory] = useState("");
 
   const selectedBank = banks.find((b) => b.id === bankId);
 
@@ -58,6 +60,8 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
         splitAmount: splitAmount ? Number.parseFloat(splitAmount) : 0,
         notes: notes || null,
         takeFrom: takeFrom || null,
+        purpose: purpose || null,
+        category: category || null,
       });
       toast.success("Expense added successfully");
       onOpenChange(false);
@@ -68,6 +72,8 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
       setAmount("");
       setSplitAmount("");
       setNotes("");
+      setPurpose("");
+      setCategory("");
     } catch {
       toast.error("Failed to add expense");
     }
@@ -181,6 +187,47 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
               rows={2}
               data-ocid="add_expense.textarea"
             />
+          </div>
+
+          {/* Optional fields */}
+          <div className="border-t pt-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Optional Details
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="exp-purpose">
+                  Purpose{" "}
+                  <span className="text-muted-foreground font-normal text-xs">
+                    (optional)
+                  </span>
+                </Label>
+                <Input
+                  id="exp-purpose"
+                  type="text"
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  placeholder="e.g. Groceries..."
+                  data-ocid="add_expense.input"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="exp-category">
+                  Category{" "}
+                  <span className="text-muted-foreground font-normal text-xs">
+                    (optional)
+                  </span>
+                </Label>
+                <Input
+                  id="exp-category"
+                  type="text"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="e.g. Food..."
+                  data-ocid="add_expense.input"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
