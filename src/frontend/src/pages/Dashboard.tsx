@@ -181,7 +181,7 @@ function EditExpenseForm({ expense, banks, onClose }: EditFormProps) {
   return (
     <>
       <div className="space-y-4 mt-2">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="edit-date">Date *</Label>
             <Input
@@ -237,7 +237,7 @@ function EditExpenseForm({ expense, banks, onClose }: EditFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="edit-amount">Amount (₹) *</Label>
             <Input
@@ -282,7 +282,7 @@ function EditExpenseForm({ expense, banks, onClose }: EditFormProps) {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
             Optional Details
           </p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="edit-purpose">
                 Purpose{" "}
@@ -354,7 +354,7 @@ function EditExpenseDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-lg max-h-[90vh] overflow-y-auto"
+        className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto"
         data-ocid="edit_expense.dialog"
       >
         <DialogHeader>
@@ -463,7 +463,7 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
       />
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -480,7 +480,7 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
             onAddExpense();
             setAddOpen(true);
           }}
-          className="gap-2"
+          className="gap-2 self-start sm:self-auto"
           data-ocid="dashboard.primary_button"
         >
           <PlusCircle size={16} />
@@ -675,7 +675,7 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
       >
         <Card className="shadow-card">
           <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base font-semibold">
                 Recent Expense Entries
               </CardTitle>
@@ -744,32 +744,28 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
                 No expenses found. Add your first expense!
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table data-ocid="expenses.table">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Bank</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Take From</TableHead>
-                      <TableHead>Purpose</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Split</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((exp, idx) => (
-                      <TableRow
-                        key={exp.id.toString()}
-                        data-ocid={`expenses.item.${idx + 1}`}
-                      >
-                        <TableCell className="text-sm">{exp.date}</TableCell>
-                        <TableCell className="text-sm font-medium">
-                          {exp.bankName}
-                        </TableCell>
-                        <TableCell>
+              <>
+                {/* Mobile card list */}
+                <div className="sm:hidden divide-y divide-border">
+                  {filtered.map((exp, idx) => (
+                    <div
+                      key={exp.id.toString()}
+                      className="p-4"
+                      data-ocid={`expenses.item.${idx + 1}`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <span className="text-xs text-muted-foreground">
+                          {exp.date}
+                        </span>
+                        <span className="font-bold text-sm text-foreground">
+                          {fmt(exp.amount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-foreground">
+                            {exp.bankName}
+                          </span>
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                               txBadgeColor[exp.transactionType] ??
@@ -778,49 +774,128 @@ export function Dashboard({ onAddExpense }: { onAddExpense: () => void }) {
                           >
                             {exp.transactionType}
                           </span>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {exp.takeFrom ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
-                          {exp.purpose ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
-                          {exp.category ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-sm">
-                          {fmt(exp.amount)}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground">
-                          {exp.splitAmount > 0 ? fmt(exp.splitAmount) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(exp)}
-                              className="h-7 w-7 p-0 hover:text-primary"
-                              data-ocid={`expenses.edit_button.${idx + 1}`}
-                            >
-                              <Pencil size={13} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(exp.id)}
-                              className="h-7 w-7 p-0 hover:text-destructive"
-                              data-ocid={`expenses.delete_button.${idx + 1}`}
-                            >
-                              <Trash2 size={13} />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(exp)}
+                            className="h-7 w-7 p-0 hover:text-primary"
+                            data-ocid={`expenses.edit_button.${idx + 1}`}
+                          >
+                            <Pencil size={13} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(exp.id)}
+                            className="h-7 w-7 p-0 hover:text-destructive"
+                            data-ocid={`expenses.delete_button.${idx + 1}`}
+                          >
+                            <Trash2 size={13} />
+                          </Button>
+                        </div>
+                      </div>
+                      {exp.takeFrom && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          From: {exp.takeFrom}
+                        </p>
+                      )}
+                      {(exp.purpose || exp.category) && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {[exp.purpose, exp.category]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      )}
+                      {exp.splitAmount > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Split: {fmt(exp.splitAmount)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table data-ocid="expenses.table">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Bank</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Take From</TableHead>
+                        <TableHead>Purpose</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Split</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((exp, idx) => (
+                        <TableRow
+                          key={exp.id.toString()}
+                          data-ocid={`expenses.item.${idx + 1}`}
+                        >
+                          <TableCell className="text-sm">{exp.date}</TableCell>
+                          <TableCell className="text-sm font-medium">
+                            {exp.bankName}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                txBadgeColor[exp.transactionType] ??
+                                "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {exp.transactionType}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {exp.takeFrom ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
+                            {exp.purpose ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
+                            {exp.category ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-sm">
+                            {fmt(exp.amount)}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
+                            {exp.splitAmount > 0 ? fmt(exp.splitAmount) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(exp)}
+                                className="h-7 w-7 p-0 hover:text-primary"
+                                data-ocid={`expenses.edit_button.${idx + 1}`}
+                              >
+                                <Pencil size={13} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(exp.id)}
+                                className="h-7 w-7 p-0 hover:text-destructive"
+                                data-ocid={`expenses.delete_button.${idx + 1}`}
+                              >
+                                <Trash2 size={13} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

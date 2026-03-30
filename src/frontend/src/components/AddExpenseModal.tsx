@@ -81,12 +81,15 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" data-ocid="add_expense.dialog">
+      <DialogContent
+        className="max-w-[95vw] sm:max-w-md"
+        data-ocid="add_expense.dialog"
+      >
         <DialogHeader>
           <DialogTitle>Add New Expense</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="exp-date">Date *</Label>
               <Input
@@ -148,7 +151,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="exp-amount">Amount (₹) *</Label>
               <Input
@@ -194,7 +197,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Optional Details
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="exp-purpose">
                   Purpose{" "}
